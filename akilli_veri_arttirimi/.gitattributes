@@ -1,0 +1,2 @@
+waymo_seed_MASSIVE.csv filter=lfs diff=lfs merge=lfs -text
+outputs/*.pth filter=lfs diff=lfs merge=lfs -text

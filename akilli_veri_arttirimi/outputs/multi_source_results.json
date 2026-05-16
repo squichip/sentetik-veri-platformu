@@ -1,0 +1,22 @@
+{
+  "waymo_scenarios": 85,
+  "waymo_trajectories": 6298,
+  "experiments": {
+    "FCD (\u0130talya)": {
+      "f1": 0.6744,
+      "recall": 0.6778
+    },
+    "Waymo": {
+      "f1": 0.9777,
+      "recall": 0.9778
+    },
+    "FCD + Waymo": {
+      "f1": 0.8341,
+      "recall": 0.8347
+    },
+    "Cross-Domain": {
+      "f1": 0.438,
+      "recall": 0.4861
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# macOS / editor
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+qtvenv/
+venv/
+.venv/
+rcgan_qt_gui_app_v1/qtvenv/
+akilli_veri_arttirimi/otonom_env/
+
+# Local environment files
+.env
+.env.*
+
+# Local logs
+*.log
