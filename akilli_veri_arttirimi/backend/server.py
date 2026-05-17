@@ -1067,10 +1067,6 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
         raw_text = await read_csv_upload(file)
         
         # ── CSV Onarım Motoru v4 ──
-        # Excel/Mac Numbers bazen Waymo CSV'lerini bozuyor:
-        # Header: 100 sütun ismi + ilk satırın 100 veri değeri = 200 alan
-        # Veri satırları: 100 veri + 99 boş alan + label = 200 alan
-        # Bu motoru tüm bu durumları otomatik onarır.
         lines = raw_text.splitlines()
         
         if len(lines) >= 2:
@@ -1078,21 +1074,17 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
             data_fields = lines[1].split(',')
             n_hf = len(header_fields)
             
-            # Waymo formatı beklentisi: ~101 sütun (100 özellik + label)
-            # Eğer 150'den fazla alan varsa, dosya bozuk
             if n_hf > 150:
-                # Header'dan gerçek sütun isimlerini ayıkla (sayısal olmayanlar)
                 real_header = []
                 for f in header_fields:
                     f = f.strip()
                     try:
                         float(f)
-                        break  # İlk sayısal değere ulaştık, header bitti
+                        break
                     except ValueError:
                         if f:
                             real_header.append(f)
                 
-                # Son eleman 'label' ise header'ın sonuna eklenmiş olabilir
                 last_field = header_fields[-1].strip().rstrip('\n').rstrip('\r')
                 if last_field == 'label' and 'label' not in real_header:
                     real_header.append('label')
@@ -1100,7 +1092,6 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
                 n_cols = len(real_header)
                 new_header = ','.join(real_header)
                 
-                # Veri satırlarını onar
                 new_lines = [new_header]
                 for line in lines[1:]:
                     line = line.strip()
@@ -1109,16 +1100,13 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
                     fields = line.split(',')
                     
                     if len(fields) > n_cols:
-                        # Gerçek veriyi al (ilk 100 alan) + label (en son alan)
-                        real_data = fields[:n_cols - 1]  # İlk 100 özellik
-                        # Label en sondaki boş olmayan alan
+                        real_data = fields[:n_cols - 1]
                         label_val = ''
                         for fi in reversed(fields):
                             fi = fi.strip()
                             if fi:
                                 try:
                                     float(fi)
-                                    # Sayısal, label değil
                                 except ValueError:
                                     label_val = fi
                                     break
@@ -1132,10 +1120,8 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
         
         df = pd.read_csv(io.StringIO(raw_text))
         
-        # Sütun isimlerini temizle
         df.columns = [str(c).split('\n')[0].split('\r')[0].strip() for c in df.columns]
         
-        # Waymo sütun ismi onarımı: 'vy(20)0.0' → 'vy(20)' gibi yapışmış isimleri düzelt
         import re
         fixed_cols = {}
         waymo_pattern = re.compile(r'^((?:x|y|speed|vx|vy)\(\d+\)).*$', re.DOTALL)
@@ -1146,7 +1132,6 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
         if fixed_cols:
             df = df.rename(columns=fixed_cols)
         
-        # Çöp sayısal sütun isimlerini sil
         garbage_cols = []
         for col in df.columns:
             try:
@@ -1162,14 +1147,11 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
         # 1. Damıt
         df_clean, report, label_col, numeric_cols = distill_dataset(df)
         
-        # Kullanıcının yüklediği veride label olmayabilir (örneğin ham Waymo testi)
-        # Çökmemesi için biz ekliyoruz.
         if not label_col:
             df_clean['label'] = 'normal'
             label_col = 'label'
             print("[ℹ️] Yüklenen veride label sütunu bulunamadı, 'label' oluşturuldu.")
         
-        # Temiz veriyi her ihtimale karşı kaydet
         df_clean.to_csv(os.path.join(OUTPUT_DIR, "distilled_data.csv"), index=False)
         
         # 2. Üret
@@ -1198,7 +1180,6 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
             **scores,
         }
         
-        # NaN / Infinity koruması (FastAPI çökmelerini engeller)
         import math
         def sanitize(obj):
             if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)): return 0.0
@@ -1208,9 +1189,11 @@ async def evaluate_pipeline(file: UploadFile = File(...), n_samples: int = Form(
             
         return sanitize(res)
     except Exception as e:
+        import traceback
         err_msg = traceback.format_exc()
         print(err_msg)
         return JSONResponse(status_code=400, content={"detail": str(e)})
+
 
 @app.post("/api/run_full_automation")
 async def run_full_automation(request: Request):

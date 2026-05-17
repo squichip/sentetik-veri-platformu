@@ -196,9 +196,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const fd=new FormData();
             fd.append('file',currentFile);
             fd.append('n_samples', nSamples.toString());
-            const r=await fetch(API+'/api/evaluate_pipeline',{method:'POST',body:fd});
-            if(!r.ok){ const err=await r.json(); throw new Error(err.detail||'Hata: '+r.status); }
-            const d=await r.json();
+            const d = await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", API+'/api/evaluate_pipeline', true);
+                xhr.timeout = 300000; // 5 dakika sınır (60 saniye sınırı kaldırıldı)
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try { resolve(JSON.parse(xhr.responseText)); } 
+                        catch(e) { reject(new Error("JSON ayrıştırma hatası")); }
+                    } else {
+                        try {
+                            let err = JSON.parse(xhr.responseText);
+                            reject(new Error(err.detail || 'Hata: ' + xhr.status));
+                        } catch(e) { reject(new Error('Hata: ' + xhr.status)); }
+                    }
+                };
+                xhr.onerror = () => reject(new Error("Bağlantı koptu veya ağ hatası."));
+                xhr.ontimeout = () => reject(new Error("Zaman aşımı (5 dakika aşıldı)."));
+                xhr.send(fd);
+            });
+            if(d.error) { throw new Error(d.error); }
             clearInterval(iv);
             $('gen-thumb').style.width='100%';$('gen-text').textContent='Tamamlandı!';
             btn.innerHTML='<i class="fa-solid fa-check"></i> Tamamlandı';
