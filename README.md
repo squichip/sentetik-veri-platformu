@@ -27,7 +27,21 @@ Merkezi `main_launcher.py` dosyası, her iki uygulamanın da tek bir tıklama il
 
 ---
 
-## 🏗️ Mimari ve İş Akışı
+## 📸 Platform Arayüzleri ve Görseller
+
+### 1. Akıllı Veri Artırımı & Kontrol Paneli
+<p align="center">
+  <img src="docs/images/synthetic_data_dashboard.png" alt="Synthetic Data Dashboard" width="90%">
+</p>
+
+### 2. Bilgisayarlı Görü Dayanıklılık (Robustness) Test Akışı
+<p align="center">
+  <img src="docs/images/robustness_cv_pipeline.png" alt="Computer Vision Robustness Pipeline" width="90%">
+</p>
+
+---
+
+## 🏗️ Sistem Mimarisi ve İş Akışı
 
 Aşağıdaki şema, platformun iki kola ayrılan ana iş akışını özetlemektedir:
 
@@ -53,18 +67,55 @@ graph TD
 
 ---
 
+## 🔍 Detaylı Sistem Analizi
+
+### 1. Görüntü Robustness Pipeline
+Bilgisayarlı görü (CV) modellerinin gerçek hayat şartlarındaki (sis, aşırı yağış, sensör bozulmaları) başarısını test etmek amacıyla tasarlanmış zincirleme bir işlem mimarisidir.
+
+* **Adım 1: RCGAN ile Yapay Bozulma (Synthesizing Perturbations):** RCGAN (Recurrent Conditional GAN) modeli eğitilerek, temiz kamera görüntülerine gerçekçi sis (blur), cisim engellemeleri (occlusion) ve ışık dalgalanmaları (brightness) sentetik olarak enjekte edilir.
+* **Adım 2: EDSR ile Süper Çözünürlük (Super Resolution):** Üretilen sentetik ve bozuk görüntüler, **EDSR (Enhanced Deep Residual Single Image Super-Resolution)** modeliyle 4 kat büyütülür (upscale). Bu adım, pikselsel bozulmaları düzelterek nesne algılama başarısını artırmak için kritik öneme sahiptir.
+* **Adım 3: YOLOv8 ile Nesne Algılama (Object Detection) Analizi:** Bozulmuş ve ardından upscale edilmiş görüntüler üzerindeki araç, yaya ve trafik işaretleri YOLOv8 ile taranır. Temiz görüntü ile bozulmuş görüntü arasındaki Güven (Confidence Score) ve Tespit Oranı (Recall) kaybı ölçülür.
+* **Adım 4: SegFormer ile Semantik Segmentasyon (Semantic Segmentation):** Piksel düzeyinde sınıflandırma yapılarak (yol, kaldırım, gökyüzü, araçlar), derinlik ve mekansal farkındalığın yapay koşullarda ne kadar saptığı ölçülür.
+
+### 2. Akıllı Veri Artırımı (Smart Data Augmentation Engine)
+Sistem, yüklenen veri setinin yapısını inceleyen bir **Otomatik Sınıflandırma ve Model Belirleme Motoru** içerir:
+
+* **CTGAN (Conditional Tabular GAN):** Eğer yüklenen veri seti standart tabular / sayısal sensör verisi ise ve yeterli boyuttaysa (100 satır üstü), CTGAN devreye girer. CTGAN, sürekli ve kategorik sütunların olasılık dağılımlarını koruyarak sıfırdan yüksek kaliteli sentetik satırlar üretir.
+* **RCGAN (Recurrent Conditional GAN):** Veri setinde yörünge (trajectory) bilgileri, zaman serileri veya ardışık otonom sürüş koordinatları (`x(1)...x(20)`, `speed`, `vx`, `vy`) bulunursa, model otomatik olarak RCGAN motoruna yönlendirilir. RCGAN, zaman serisindeki adımların birbirleriyle olan korelasyonunu korur.
+* **SMOTE + Gaussian Fallback:** Veri boyutu 100 satırın altındaysa, derin öğrenme tabanlı GAN modelleri ezberleme (overfitting) yapacağı için, sistem otomatik olarak SMOTE ve Gaussian gürültü ekleme algoritmasına geçiş yapar.
+
+#### 📊 Akademik Değerlendirme (Fidelity & Utility) Metrikleri
+Üretilen verinin kalitesi sadece görsel değil, matematiksel ve istatistiksel testlerden geçirilir:
+* **Fidelity (Benzerlik) Analizi:**
+  * *Cosine Similarity:* Orijinal ve sentetik veri kümelerinin ortalama vektörleri arasındaki kosinüs benzerliği ölçülür.
+  * *Correlation Comparison:* Sütunların kendi aralarındaki korelasyon matrisleri karşılaştırılarak, sentetik verinin orijinal verideki ilişkileri koruma başarısı test edilir.
+* **Utility (Kullanılabilirlik/Yararlılık) Analizi:**
+  * Orijinal veri üzerinde bir **Gradient Boosting Classifier** eğitilir (`Seed Model`) ve test edilir.
+  * Ardından, orijinal + sentetik verinin birleşimi üzerinde aynı parametrelerle yeni bir model eğitilir (`Augmented Model`).
+  * İki model aynı bağımsız test verisinde yarıştırılır. Sentetik verinin model başarısını (özellikle veri seti dengesiz ise azınlık sınıfı recall değerini) ne kadar artırdığı raporlanır.
+
+---
+
 ## 📁 Proje Yapısı (Directory Structure)
 
 ```text
 📦 projects/
- ┣ 📜 main_launcher.py         # Tüm sistemi başlatan ana kontrol ekranı
- ┣ 📜 PROJE_NOTLARI.md         # Kapsamlı geliştirme ve mühendislik notları
- ┣ 📂 rcgan_qt_gui_app_v1/     # Görüntü Robustness için Qt tabanlı kullanıcı arayüzü
- ┣ 📂 detector/                # YOLO, SegFormer ve EDSR yapay zeka modelleri
  ┣ 📂 akilli_veri_arttirimi/   # Tabular/Yörünge veri artırımı (CTGAN/RCGAN) platformu
+ ┃ ┣ 📂 backend/               # FastAPI sunucusu ve veri işleme motorları
+ ┃ ┣ 📂 docs/                  # Akıllı Veri Artırımı özel dokümantasyonu
+ ┃ ┣ 📂 otonom_env/            # Veri artırımı özel Python sanal ortamı (venv)
+ ┃ ┗ 📜 requirements.txt       # Veri artırımı kütüphaneleri (PyTorch, CTGAN, vb.)
+ ┣ 📂 detector/                # YOLO, SegFormer ve EDSR yapay zeka modelleri
+ ┣ 📂 rcgan_qt_gui_app_v1/     # Görüntü Robustness için Qt tabanlı kullanıcı arayüzü
+ ┃ ┣ 📂 qtvenv/                # Görüntü işleme özel Python sanal ortamı (venv)
+ ┃ ┗ 📜 requirements_qt.txt    # Görüntü işleme kütüphaneleri (Qt, Ultralytics, vb.)
+ ┣ 📂 docs/                    # Genel proje dokümantasyonu ve görseller
+ ┃ ┗ 📂 images/                # Dashboard ve Infografik görselleri
  ┣ 📂 clean/                   # Referans alınan temiz kamera görüntüleri
  ┣ 📂 outputs/                 # Üretilen sentetik ve bozulmuş görüntüler
- ┗ 📂 results/                 # Metrikler, tespit haritaları ve kapsamlı performans raporları
+ ┣ 📂 results/                 # Metrikler, tespit haritaları ve kapsamlı performans raporları
+ ┣ 📜 main_launcher.py         # Tüm sistemi başlatan ana kontrol ekranı
+ ┗ 📜 PROJE_NOTLARI.md         # Kapsamlı geliştirme ve mühendislik notları
 ```
 
 ---
@@ -171,6 +222,20 @@ python main_launcher.py
 ```
 *(Launcher, arka planda otonom_env'yi bularak sunucuyu doğru ortamda başlatır.)*
 </details>
+
+---
+
+## 📡 Özel Mühendislik Çözümü: WebKit Timeout Aşımı
+FastAPI backend mimarisinde, çok derin CTGAN eğitimleri veya büyük veri setlerinin Gradient Boosting ile değerlendirilmesi 1 dakikadan uzun sürebilmektedir. macOS WebKit (`pywebview` masaüstü motoru) varsayılan olarak 60. saniyede ağ isteklerini zaman aşımına uğratıp bağlantıyı kesmekteydi.
+
+**Nasıl Çözdük?**
+Arayüzdeki standart `fetch` API'sini tamamen kaldırıp, yerine **XMLHttpRequest (XHR)** mimarisine geçiş yaptık ve arayüze özel olarak **300.000 ms (5 dakika) zaman aşımı** tanımladık:
+```javascript
+const xhr = new XMLHttpRequest();
+xhr.open("POST", API + '/api/evaluate_pipeline', true);
+xhr.timeout = 300000; // 5 dakikalık genişletilmiş WebKit desteği
+```
+Bu sayede en ağır veri setleri dahi arayüz bağlantısı kopmadan en üst kalitede eğitilip değerlendirilebilmektedir.
 
 ---
 
