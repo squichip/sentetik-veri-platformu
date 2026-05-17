@@ -1,290 +1,196 @@
-# Sentetik Veri Platformu
+<h1 align="center">
+  🚀 Sentetik Veri & Robustness Platformu
+</h1>
 
-Bu repo iki ana uygulamayi tek proje altinda toplar:
+<p align="center">
+  <strong>Görüntü işleme ve yapısal/tabular veri setleri için uçtan uca sentetik veri üretimi, yapay zeka dayanıklılık (robustness) testi ve veri artırımı ekosistemi.</strong>
+</p>
 
-1. **Goruntu Robustness Pipeline**
-   Clean kamera frame'lerinden RCGAN ile bozulmus goruntu uretir, EDSR ile upscale eder, ardindan YOLO ve SegFormer ile robustness analizi yapar.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue" alt="Python Version">
+  <img src="https://img.shields.io/badge/PyTorch-Deep%20Learning-orange" alt="PyTorch">
+  <img src="https://img.shields.io/badge/YOLOv8-Object%20Detection-yellow" alt="YOLOv8">
+  <img src="https://img.shields.io/badge/FastAPI-Backend-009688" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Qt-Desktop%20UI-41CD52" alt="Qt">
+</p>
 
-2. **Akilli Veri Artirimi**
-   CSV/tabular/yorunge verisini damitir; veri tipine gore RCGAN, CTGAN veya SMOTE ile sentetik veri uretir ve utility/fidelity raporlari olusturur.
+---
 
-Kokteki `main_launcher.py` iki uygulama icin ana secim ekranidir.
+## 🌟 Proje Vizyonu ve Kapsamı
 
-## Proje Yapisi
+Bu devasa depo (repository), makine öğrenmesi modellerinin karşılaştığı veri kıtlığı ve çevresel faktörlere karşı kırılganlık sorunlarını çözmek için tasarlanmış **iki ana endüstriyel çözümü** tek bir çatı altında toplar:
 
-```text
-projects/
-├── main_launcher.py                  # Ana secim ekrani
-├── PROJE_NOTLARI.md                  # Gelistirme notlari ve proje analizi
-├── rcgan_qt_gui_app_v1/              # Goruntu RCGAN Qt arayuzu
-├── detector/                         # YOLO, SegFormer ve EDSR adimlari
-├── akilli_veri_arttirimi/            # CSV/tabular sentetik veri platformu
-├── clean/                            # Secilen clean goruntu kopyalari
-├── outputs/                          # Uretilen gorsel ciktilar
-└── results/                          # Metrikler, grafikler ve raporlar
+1. **📷 Görüntü Robustness Pipeline:** Temiz (clean) kamera görüntülerini alır, **RCGAN** mimarisi ile sentetik olarak bozar (bulanıklık, parlaklık değişimi vb.), **EDSR** ile çözünürlüğünü artırır ve en sonunda **YOLO / SegFormer** modellerinin bu zorlu şartlar altındaki performansını (robustness) analiz eder.
+2. **📊 Akıllı Veri Artırımı:** Standart tabular CSV verilerini veya özel **Waymo Yörünge (Trajectory)** verilerini analiz eder; veri yapısına en uygun olan modeli (**RCGAN, CTGAN veya SMOTE**) otomatik seçerek otonom sürüş sistemleri ve sensör ağları için yüksek kaliteli sentetik veri üretir.
+
+Merkezi `main_launcher.py` dosyası, her iki uygulamanın da tek bir tıklama ile yönetilebileceği ana komuta merkezidir.
+
+---
+
+## 🏗️ Mimari ve İş Akışı
+
+Aşağıdaki şema, platformun iki kola ayrılan ana iş akışını özetlemektedir:
+
+```mermaid
+graph TD
+    A[<b>main_launcher.py</b><br>Ana Komuta Merkezi] -->|Görüntü İşleme| B[RCGAN Qt Masaüstü Arayüzü]
+    A -->|Sensör/Tabular Veri| C[Akıllı Veri Artırımı Web Arayüzü]
+    
+    %% Görüntü Pipeline
+    B --> D[Clean Görüntüler]
+    D --> E[RCGAN ile Sentetik Bozulma<br><i>Blur, Occlusion, vb.</i>]
+    E --> F[EDSR ile Upscale]
+    F --> G[YOLO & SegFormer<br>Robustness Analizi]
+    
+    %% Tabular Pipeline
+    C --> H[CSV / Sensör / Yörünge Verisi]
+    H --> I{Adaptive Algoritma Motoru}
+    I -->|Tabular Veri| J[CTGAN]
+    I -->|Waymo Yörünge| K[RCGAN]
+    I -->|Küçük Veri| L[SMOTE + Gaussian]
+    J & K & L --> M[Akademik Kalite Kontrolü<br><i>Fidelity & Utility Skorlaması</i>]
 ```
 
-## Git LFS
+---
 
-Bu projede buyuk model ve veri dosyalari Git LFS ile tutulur. Repoyu klonlamadan once Git LFS kurulu olmalidir.
-
-LFS ile takip edilen dosya tipleri:
+## 📁 Proje Yapısı (Directory Structure)
 
 ```text
-*.pt
-*.pth
-*.pb
-akilli_veri_arttirimi/waymo_seed_MASSIVE.csv
+📦 projects/
+ ┣ 📜 main_launcher.py         # Tüm sistemi başlatan ana kontrol ekranı
+ ┣ 📜 PROJE_NOTLARI.md         # Kapsamlı geliştirme ve mühendislik notları
+ ┣ 📂 rcgan_qt_gui_app_v1/     # Görüntü Robustness için Qt tabanlı kullanıcı arayüzü
+ ┣ 📂 detector/                # YOLO, SegFormer ve EDSR yapay zeka modelleri
+ ┣ 📂 akilli_veri_arttirimi/   # Tabular/Yörünge veri artırımı (CTGAN/RCGAN) platformu
+ ┣ 📂 clean/                   # Referans alınan temiz kamera görüntüleri
+ ┣ 📂 outputs/                 # Üretilen sentetik ve bozulmuş görüntüler
+ ┗ 📂 results/                 # Metrikler, tespit haritaları ve kapsamlı performans raporları
 ```
 
-macOS:
+---
 
+## ⚙️ Git LFS (Büyük Dosya Yönetimi)
+
+Bu projede devasa boyutlu Derin Öğrenme modelleri ve dev veri setleri **Git LFS** ile barındırılmaktadır. Repoyu klonlamadan önce Git LFS'in kurulu olması **ZORUNLUDUR**.
+
+Takip edilen LFS uzantıları: `*.pt`, `*.pth`, `*.pb`, `waymo_seed_MASSIVE.csv`
+
+**macOS Kurulumu:**
 ```bash
 brew install git-lfs
 git lfs install
 ```
 
-Windows:
-
+**Windows Kurulumu:**
 ```powershell
 git lfs install
 ```
 
-Git LFS kurulu degilse `.pt`, `.pth`, `.pb` veya buyuk `.csv` dosyalari gercek icerik yerine kucuk pointer dosyasi olarak iner.
+*(Eğer modeller eksik inerse veya 1 KB boyutunda görünürse, depo dizinindeyken `git lfs pull` komutunu çalıştırın.)*
 
-## Sifirdan Kurulum
+---
 
-### 1. Repoyu klonla
+## 🚀 Başlangıç ve Sıfırdan Kurulum
+
+### 1. Repoyu Klonlama
 
 ```bash
-git clone https://github.com/squichip/my-project.git
-cd my-project
+git clone https://github.com/squichip/sentetik-veri-platformu.git
+cd sentetik-veri-platformu
 git lfs pull
 ```
 
-### 2. Python surumu
+### 2. Sanal Ortamlar (Virtual Environments)
+Sistem çakışmalarını önlemek için projede iki farklı sanal ortam (venv) kullanılmaktadır:
+* `qtvenv`: Görüntü arayüzü ve bilgisayarlı görü (CV) modelleri için.
+* `otonom_env`: Veri artırımı ve istatistiksel modeller için.
 
-Onerilen surumlar:
+---
 
-```text
-Python 3.10, 3.11 veya 3.12
-```
+## 🛠️ Kurulum Talimatları
 
-Projede iki farkli sanal ortam kullanmak daha sagliklidir:
+<details open>
+<summary><b>1️⃣ Görüntü Robustness Pipeline Kurulumu</b></summary>
+<br>
 
-- `rcgan_qt_gui_app_v1/qtvenv`: goruntu arayuzu ve detector pipeline'i
-- `akilli_veri_arttirimi/otonom_env`: CSV/tabular veri artirimi arayuzu
-
-## Goruntu Robustness Pipeline Kurulumu
-
-### 1. Sanal ortam olustur
-
+**1. Sanal Ortam Oluştur:**
 ```bash
 cd rcgan_qt_gui_app_v1
 python -m venv qtvenv
 source qtvenv/bin/activate
 python -m pip install --upgrade pip
 ```
+*(Windows için: `qtvenv\Scripts\activate`)*
 
-Windows:
-
-```powershell
-cd rcgan_qt_gui_app_v1
-python -m venv qtvenv
-qtvenv\Scripts\activate
-python -m pip install --upgrade pip
-```
-
-### 2. Python paketlerini yukle
-
+**2. Gereksinimleri Yükle:**
 ```bash
 pip install -r requirements_qt.txt
 pip install opencv-python matplotlib pandas tqdm ultralytics transformers
 ```
+*Not: YOLO ve SegFormer modelleri, ilk çalıştırmada Hugging Face ve Ultralytics üzerinden gerekli model ağırlıklarını indirecektir.*
 
-Notlar:
-
-- `torch` ve `torchvision` sistemine gore CPU veya GPU paketi olarak kurulabilir.
-- Apple Silicon Mac'te PyTorch MPS otomatik kullanilabilir.
-- YOLO ilk calismada gerekirse ek model agirliklarini indirebilir.
-- SegFormer modeli Hugging Face uzerinden cekildigi icin ilk calistirmada internet gerekebilir.
-
-### 3. Gerekli buyuk dosyalari kontrol et
-
-Bu dosyalar Git LFS ile gelmelidir:
-
-```text
-rcgan_qt_gui_app_v1/checkpoint_epoch_29.pt
-detector/EDSR_x4.pb
-detector/yolov8n.pt
-```
-
-Eger dosyalar cok kucuk gorunuyorsa:
-
-```bash
-git lfs pull
-```
-
-### 4. Uygulamayi calistir
-
-`rcgan_qt_gui_app_v1` klasorundeyken:
-
-```bash
-python qt_gui_app_updated.py
-```
-
-Kok ana ekrandan calistirmak icin:
-
+**3. Uygulamayı Başlat:**
 ```bash
 cd ..
 python main_launcher.py
 ```
+</details>
 
-## Goruntu Pipeline Akisi
+<details open>
+<summary><b>2️⃣ Akıllı Veri Artırımı Kurulumu (ÖNEMLİ)</b></summary>
+<br>
 
-Arayuzde clean frame'ler secilir. Pipeline sirayla:
-
-1. Secilen clean goruntuleri `clean/` klasorune kopyalar.
-2. RCGAN ile hatali goruntuleri `outputs/gan_generated/` altina uretir.
-3. EDSR ile upscale edip `outputs/gan_upscaled/` altina yazar.
-4. Detector veri setini `detector/robustness_dataset/` altinda hazirlar.
-5. YOLO sonuclarini `results/yolo/` ve `outputs/yolo_comparisons/` altina yazar.
-6. Segmentasyon sonuclarini `results/segmentation/`, `outputs/segmentation_outputs/` ve `outputs/segmentation_comparisons/` altina yazar.
-
-Arayuzde tek hata tipi veya 3 hata tipi icin ayri seviyeler secilebilir:
-
-```text
-blur: low / medium / high
-occlusion: low / medium / high
-brightness: low / medium / high
-```
-
-## Akilli Veri Artirimi Kurulumu
-
-### 1. Sanal ortam olustur
-
+**1. Sanal Ortam Oluştur:**
 ```bash
 cd akilli_veri_arttirimi
 python -m venv otonom_env
 source otonom_env/bin/activate
 python -m pip install --upgrade pip
 ```
+*(Windows için: `otonom_env\Scripts\activate`)*
 
-Windows:
-
-```powershell
-cd akilli_veri_arttirimi
-python -m venv otonom_env
-otonom_env\Scripts\activate
-python -m pip install --upgrade pip
-```
-
-### 2. Paketleri yukle
-
+**2. Gereksinimleri Yükle:**
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Gerekli buyuk dosyalari kontrol et
+**3. LFS Modellerini Kontrol Et:**
+Şu büyük dosyaların tam boyutuyla indiğinden emin olun (Gerekirse `git lfs pull` yapın):
+* `akilli_veri_arttirimi/waymo_seed_MASSIVE.csv`
+* `akilli_veri_arttirimi/outputs/waymo_rcgan_GODMODE_A100_STABLE.pth`
 
-Bu dosyalar Git LFS ile gelmelidir:
-
-```text
-akilli_veri_arttirimi/waymo_seed_MASSIVE.csv
-akilli_veri_arttirimi/outputs/waymo_rcgan_GODMODE_A100_STABLE.pth
-```
-
-Eger dosyalar pointer olarak geldiyse:
-
-```bash
-git lfs pull
-```
-
-### 4. Uygulamayi calistir
-
+**4. Uygulamayı Başlat:**
 ```bash
 python main.py
 ```
-
-Bu komut FastAPI backend'i baslatir ve masaustu webview penceresini acar.
-
-Sadece web sunucusunu acmak istersen:
-
+Veya doğrudan kök klasörden ana launcher ile başlatabilirsiniz:
 ```bash
-python backend/server.py
-```
-
-Sonra tarayicida:
-
-```text
-http://127.0.0.1:8000
-```
-
-## Ana Launcher Ile Calistirma
-
-Kok klasorde, goruntu ortamini aktif ederek:
-
-```bash
-cd /path/to/my-project
+cd /path/to/sentetik-veri-platformu
 source rcgan_qt_gui_app_v1/qtvenv/bin/activate
 python main_launcher.py
 ```
+*(Launcher, arka planda otonom_env'yi bularak sunucuyu doğru ortamda başlatır.)*
+</details>
 
-Windows:
+---
 
-```powershell
-cd C:\path\to\my-project
-rcgan_qt_gui_app_v1\qtvenv\Scripts\activate
-python main_launcher.py
-```
+## 💡 Sık Karşılaşılan Sorunlar (Troubleshooting)
 
-Ana ekran iki secenek sunar:
+| Sorun | Çözüm Yöntemi |
+|---|---|
+| **Modeller veya CSV'ler Çalışmıyor (1 KB Görünüyor)** | Git LFS kurulmamış. `git lfs install` ve ardından `git lfs pull` komutunu çalıştırın. |
+| **`ModuleNotFoundError` Hatası Alıyorum** | Yanlış sanal ortamdasınız. Görüntü modülü için `qtvenv`, Veri modülü için `otonom_env`'yi aktif edin (`source bin/activate`). |
+| **Port 8000 veya 8001 Kullanımda Hatası** | Arka planda açık kalmış `python main.py` veya `server.py` sürecini terminalden sonlandırın (Ctrl+C). |
+| **`Load failed` veya Zaman Aşımı Hatası (Veri Artırımı)** | Aşırı büyük veri setlerinde (CTGAN ile) sistem uzun sürebilir. *Not: Altyapı artık 5 dakikalık genişletilmiş WebKit XHR timeout desteğiyle çalışmaktadır.* |
+| **macOS `AVFFrameReceiver` Uyarısı** | `av` ve `opencv-python` kütüphanelerinin C++ çakışmasından kaynaklanan zararsız bir uyarıdır. |
 
-- **Goruntu Modelini Ac**
-- **Veri Artirimi Modelini Ac**
+---
 
-Veri artirimi icin `akilli_veri_arttirimi/otonom_env` varsa launcher onu kullanir.
+## 👨‍💻 Geliştirme ve Mimari Kararlar
 
-## Sik Karsilasilan Hatalar
+Projenin altında yatan teorik yaklaşımlar, yaşanan darboğazlar ve alınan mimari kararlar (örneğin; neden Time-Series için Min-Max yerine fiziksel limitasyon uygulandığı, macOS kilitlenmelerini aşmak için FastAPI Streaming/XHR çözümlerinin nasıl uygulandığı) hakkında kapsamlı okuma yapmak için kök dizindeki **`PROJE_NOTLARI.md`** belgesini inceleyebilirsiniz.
 
-### LFS dosyalari kucuk gorunuyor
-
-```bash
-git lfs install
-git lfs pull
-```
-
-### `ModuleNotFoundError` aliyorum
-
-Ilgili sanal ortami aktif ettiginden emin ol:
-
-```bash
-source rcgan_qt_gui_app_v1/qtvenv/bin/activate
-```
-
-veya:
-
-```bash
-source akilli_veri_arttirimi/otonom_env/bin/activate
-```
-
-Sonra requirements dosyasini tekrar yukle.
-
-### Port 8000 kullanimda
-
-Daha once acik kalmis `python main.py` veya `backend/server.py` surecini kapat.
-
-### macOS `AVFFrameReceiver` uyarisi
-
-`av` ve `opencv-python` paketlerinin icindeki ffmpeg kutuphaneleri ayni Objective-C siniflarini yuklediginde gorulebilir. Genellikle uyari seviyesindedir; crash olursa ayni ortamda `av` paketini kaldirmak veya temiz sanal ortam kurmak denenebilir.
-
-### Hugging Face token uyarisi
-
-SegFormer modeli indirirken token yoksa hiz limiti uyarisi gorulebilir. Zorunlu degildir; cok sik indirme yapiliyorsa `HF_TOKEN` ayarlanabilir.
-
-## Gelistirme Notlari
-
-- Detayli proje notlari icin `PROJE_NOTLARI.md` dosyasina bak.
-- Sanal ortamlar ve cache dosyalari git'e alinmaz.
-- Buyuk model/veri dosyalari Git LFS ile takip edilir.
-- Ciktilar `outputs/` ve `results/` altinda duzenli tutulur.
+---
+<p align="center">
+  <i>Squichip tarafından yüksek endüstriyel standartlarla tasarlanmıştır.</i>
+</p>
