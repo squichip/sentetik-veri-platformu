@@ -257,5 +257,5 @@ Projenin altında yatan teorik yaklaşımlar, yaşanan darboğazlar ve alınan m
 
 ---
 <p align="center">
-  <i>Squichip tarafından yüksek endüstriyel standartlarla tasarlanmıştır.</i>
+  <i>Ali Turhan ve Özcan Yıldıral tarafından yüksek akademik ve endüstriyel standartlarla tasarlanmıştır.</i>
 </p>
