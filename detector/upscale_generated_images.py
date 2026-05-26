@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 
 
 DATASET_ROOT = "robustness_dataset"
@@ -8,6 +9,31 @@ MODEL_PATH = "EDSR_x4.pb"
 TARGET_WIDTH = 1600
 TARGET_HEIGHT = 900
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
+
+
+def cv2_safe_model_path(model_path):
+    """OpenCV dnn_superres can fail on Windows paths with non-ASCII chars."""
+    model_path = Path(model_path)
+    model_text = str(model_path)
+
+    try:
+        model_text.encode("ascii")
+        return model_text
+    except UnicodeEncodeError:
+        pass
+
+    public_dir = Path(os.environ.get("PUBLIC", r"C:\Users\Public"))
+    cache_dir = public_dir / "sentetik_veri_platformu_cv2"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    cached_model = cache_dir / model_path.name
+    if (
+        not cached_model.exists()
+        or cached_model.stat().st_size != model_path.stat().st_size
+    ):
+        shutil.copyfile(model_path, cached_model)
+
+    return str(cached_model)
 
 
 def default_generated_dirs(dataset_root=DATASET_ROOT):
@@ -59,6 +85,7 @@ def load_super_resolution_model(model_path=MODEL_PATH, log_callback=None):
 
     log_message("\nLoading Super Resolution model...\n", log_callback)
 
+    model_path = cv2_safe_model_path(model_path)
     sr = cv2.dnn_superres.DnnSuperResImpl_create()
     sr.readModel(model_path)
     sr.setModel("edsr", 4)
@@ -75,8 +102,10 @@ def upscale_image_file(
     target_size=(TARGET_WIDTH, TARGET_HEIGHT),
 ):
     import cv2
+    import numpy as np
 
-    image = cv2.imread(input_path)
+    image_data = np.fromfile(input_path, dtype=np.uint8)
+    image = cv2.imdecode(image_data, cv2.IMREAD_COLOR)
 
     if image is None:
         return False
@@ -89,7 +118,12 @@ def upscale_image_file(
         interpolation=cv2.INTER_CUBIC,
     )
 
-    cv2.imwrite(output_path, final)
+    extension = os.path.splitext(output_path)[1] or ".png"
+    ok, encoded = cv2.imencode(extension, final)
+    if not ok:
+        return False
+
+    encoded.tofile(output_path)
     return True
 
 

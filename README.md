@@ -151,77 +151,116 @@ cd sentetik-veri-platformu
 git lfs pull
 ```
 
-### 2. Sanal Ortamlar (Virtual Environments)
-Sistem çakışmalarını önlemek için projede iki farklı sanal ortam (venv) kullanılmaktadır:
-* `qtvenv`: Görüntü arayüzü ve bilgisayarlı görü (CV) modelleri için.
-* `otonom_env`: Veri artırımı ve istatistiksel modeller için.
+`git lfs pull` sonrasında özellikle şu dosyaların gerçek boyutta olduğundan emin olun:
+
+- `rcgan_qt_gui_app_v1/checkpoint_epoch_29.pt`
+- `detector/EDSR_x4.pb`
+- `detector/yolov8n.pt`
+- `akilli_veri_arttirimi/waymo_seed_MASSIVE.csv`
+- `akilli_veri_arttirimi/outputs/waymo_rcgan_GODMODE_A100_STABLE.pth`
+
+### 2. Sanal Ortam Mantığı
+
+Projede iki ayrı Python ortamı kullanılır. Bu bilinçli bir ayrımdır:
+
+- `rcgan_qt_gui_app_v1/qtvenv`: Ana launcher, RCGAN görüntü arayüzü ve detector/YOLO/SegFormer pipeline için.
+- `akilli_veri_arttirimi/otonom_env`: CSV/tabular veri artırımı, FastAPI, CTGAN/RCGAN ve pywebview arayüzü için.
+
+Ana uygulama her zaman kök dizindeki `main_launcher.py` dosyasıdır ve `qtvenv` ile çalıştırılır. Launcher içinden **Akıllı Veri Artırımı** butonuna basıldığında, arka planda `akilli_veri_arttirimi/otonom_env` kullanılır.
 
 ---
 
 ## 🛠️ Kurulum Talimatları
 
-<details open>
-<summary><b>1️⃣ Görüntü Robustness Pipeline Kurulumu</b></summary>
-<br>
+### macOS / Linux
 
-**1. Sanal Ortam Oluştur:**
+**Görüntü Robustness Pipeline ve ana launcher:**
+
 ```bash
-cd rcgan_qt_gui_app_v1
-python -m venv qtvenv
+cd sentetik-veri-platformu/rcgan_qt_gui_app_v1
+python3 -m venv qtvenv
 source qtvenv/bin/activate
 python -m pip install --upgrade pip
-```
-*(Windows için: `qtvenv\Scripts\activate`)*
-
-**2. Gereksinimleri Yükle:**
-```bash
-pip install -r requirements_qt.txt
-pip install opencv-python matplotlib pandas tqdm ultralytics transformers
-```
-*Not: YOLO ve SegFormer modelleri, ilk çalıştırmada Hugging Face ve Ultralytics üzerinden gerekli model ağırlıklarını indirecektir.*
-
-**3. Uygulamayı Başlat:**
-```bash
+python -m pip install -r requirements_qt.txt
+python -m pip install opencv-contrib-python matplotlib pandas tqdm ultralytics transformers
 cd ..
 python main_launcher.py
 ```
-</details>
 
-<details open>
-<summary><b>2️⃣ Akıllı Veri Artırımı Kurulumu (ÖNEMLİ)</b></summary>
-<br>
+**Akıllı Veri Artırımı ortamı:**
 
-**1. Sanal Ortam Oluştur:**
 ```bash
-cd akilli_veri_arttirimi
-python -m venv otonom_env
+cd sentetik-veri-platformu/akilli_veri_arttirimi
+python3.11 -m venv otonom_env
 source otonom_env/bin/activate
 python -m pip install --upgrade pip
-```
-*(Windows için: `otonom_env\Scripts\activate`)*
-
-**2. Gereksinimleri Yükle:**
-```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-**3. LFS Modellerini Kontrol Et:**
-Şu büyük dosyaların tam boyutuyla indiğinden emin olun (Gerekirse `git lfs pull` yapın):
-* `akilli_veri_arttirimi/waymo_seed_MASSIVE.csv`
-* `akilli_veri_arttirimi/outputs/waymo_rcgan_GODMODE_A100_STABLE.pth`
+İsterseniz veri artırımı uygulamasını tek başına da açabilirsiniz:
 
-**4. Uygulamayı Başlat:**
 ```bash
 python main.py
 ```
-Veya doğrudan kök klasörden ana launcher ile başlatabilirsiniz:
-```bash
-cd /path/to/sentetik-veri-platformu
-source rcgan_qt_gui_app_v1/qtvenv/bin/activate
+
+### Windows PowerShell
+
+> Windows'ta `source .../bin/activate` çalışmaz. PowerShell için `.\...\Scripts\Activate.ps1` kullanılmalıdır.
+
+**1. Git LFS'i hazırlayın ve repoyu çekin:**
+
+```powershell
+git lfs install
+git clone https://github.com/squichip/sentetik-veri-platformu.git
+cd sentetik-veri-platformu
+git lfs pull
+```
+
+**2. Ana launcher + görüntü pipeline ortamını kurun (`qtvenv`):**
+
+```powershell
+cd C:\Users\<kullanici-adiniz>\sentetik-veri-platformu
+py -3.10 -m venv .\rcgan_qt_gui_app_v1\qtvenv
+.\rcgan_qt_gui_app_v1\qtvenv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r .\rcgan_qt_gui_app_v1\requirements_qt.txt
+python -m pip install opencv-contrib-python matplotlib pandas tqdm ultralytics transformers
+```
+
+`opencv-contrib-python` önemlidir; EDSR upscale adımındaki `cv2.dnn_superres` modülü standart `opencv-python` paketinde bulunmayabilir.
+
+**3. Akıllı Veri Artırımı ortamını kurun (`otonom_env`):**
+
+```powershell
+cd C:\Users\<kullanici-adiniz>\sentetik-veri-platformu\akilli_veri_arttirimi
+py -3.11 -m venv otonom_env
+.\otonom_env\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Akıllı Veri Artırımı için Python 3.11 önerilir. Python 3.10 ile `contourpy==1.3.3 Requires-Python >=3.11` gibi paket uyumsuzluğu alınabilir.
+
+**4. Ana launcher'ı başlatın:**
+
+```powershell
+cd C:\Users\<kullanici-adiniz>\sentetik-veri-platformu
+.\rcgan_qt_gui_app_v1\qtvenv\Scripts\Activate.ps1
 python main_launcher.py
 ```
-*(Launcher, arka planda otonom_env'yi bularak sunucuyu doğru ortamda başlatır.)*
-</details>
+
+Bu pencere üzerinden iki uygulamayı da açabilirsiniz:
+
+- **Görüntü Robustness Pipeline**: `qtvenv` ile çalışır.
+- **Akıllı Veri Artırımı**: `akilli_veri_arttirimi\otonom_env` ile çalışır.
+
+Akıllı Veri Artırımı'nı doğrudan açmak isterseniz:
+
+```powershell
+cd C:\Users\<kullanici-adiniz>\sentetik-veri-platformu\akilli_veri_arttirimi
+.\otonom_env\Scripts\Activate.ps1
+python main.py
+```
 
 ---
 
@@ -244,9 +283,19 @@ Bu sayede en ağır veri setleri dahi arayüz bağlantısı kopmadan en üst kal
 | Sorun | Çözüm Yöntemi |
 |---|---|
 | **Modeller veya CSV'ler Çalışmıyor (1 KB Görünüyor)** | Git LFS kurulmamış. `git lfs install` ve ardından `git lfs pull` komutunu çalıştırın. |
-| **`ModuleNotFoundError` Hatası Alıyorum** | Yanlış sanal ortamdasınız. Görüntü modülü için `qtvenv`, Veri modülü için `otonom_env`'yi aktif edin (`source bin/activate`). |
+| **PowerShell'de `source` komutu çalışmıyor** | `source` macOS/Linux komutudur. Windows PowerShell'de görüntü ortamı için `.\rcgan_qt_gui_app_v1\qtvenv\Scripts\Activate.ps1`, veri artırımı için `.\akilli_veri_arttirimi\otonom_env\Scripts\Activate.ps1` kullanın. |
+| **`Activate.ps1 cannot be loaded because running scripts is disabled`** | PowerShell script çalıştırma izni kapalıdır. Bir kez `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` çalıştırıp terminali yeniden deneyin. |
+| **`ModuleNotFoundError: No module named 'PySide6'`** | Ana launcher `qtvenv` ile açılır. Kök dizinde `.\rcgan_qt_gui_app_v1\qtvenv\Scripts\Activate.ps1` çalıştırın, sonra `python -m pip install -r .\rcgan_qt_gui_app_v1\requirements_qt.txt` kurun. |
+| **`ModuleNotFoundError: No module named 'requests'`, `fastapi`, `uvicorn`, `torch`, `pandas`, `sklearn`** | Bu hata Akıllı Veri Artırımı ortamının eksik olduğunu gösterir. `cd akilli_veri_arttirimi`, `.\otonom_env\Scripts\Activate.ps1`, `python -m pip install -r requirements.txt` komutlarını çalıştırın. |
+| **`contourpy==1.3.3 Requires-Python >=3.11` veya `No matching distribution found for contourpy==1.3.3`** | Windows'taki `otonom_env` Python 3.10 ile oluşturulmuş olabilir. Akıllı Veri Artırımı için ortamı Python 3.11 ile kurun: `py -3.11 -m venv otonom_env`. |
+| **`AttributeError: module 'cv2' has no attribute 'dnn_superres'`** | EDSR upscale için standart `opencv-python` yetmez. `qtvenv` aktifken `python -m pip uninstall opencv-python opencv-python-headless opencv-contrib-python -y` ve ardından `python -m pip install opencv-contrib-python` çalıştırın. |
+| **OpenCV `FAILED: fs.is_open(). Can't open "...\detector\EDSR_x4.pb"` hatası** | Windows'ta Türkçe karakterli kullanıcı yolu (`C:\Users\özcan\...`) OpenCV C++ okumasında sorun çıkarabilir. Güncel kod modeli `C:\Users\Public\sentetik_veri_platformu_cv2\EDSR_x4.pb` altına kopyalayıp oradan okur. Yine hata alınırsa repoyu ASCII karakterli bir klasöre taşıyın, örn. `C:\projects\sentetik-veri-platformu`. |
+| **`UnicodeEncodeError: 'charmap' codec can't encode character`** | Windows konsolu emoji/UTF-8 çıktıyı yazamıyor olabilir. Güncel `main_launcher.py` alt süreçleri `PYTHONIOENCODING=utf-8` ve `PYTHONUTF8=1` ile başlatır. Doğrudan terminalden çalıştırıyorsanız önce `$env:PYTHONIOENCODING='utf-8'; $env:PYTHONUTF8='1'` yazabilirsiniz. |
+| **`ModuleNotFoundError` Hatası Alıyorum** | Yanlış sanal ortamdasınız. Görüntü modülü ve `main_launcher.py` için `qtvenv`, Veri Artırımı için `otonom_env` aktif olmalıdır. |
 | **Port 8000 veya 8001 Kullanımda Hatası** | Arka planda açık kalmış `python main.py` veya `server.py` sürecini terminalden sonlandırın (Ctrl+C). |
 | **`Load failed` veya Zaman Aşımı Hatası (Veri Artırımı)** | Aşırı büyük veri setlerinde (CTGAN ile) sistem uzun sürebilir. *Not: Altyapı artık 5 dakikalık genişletilmiş WebKit XHR timeout desteğiyle çalışmaktadır.* |
+| **Hugging Face `symlinks` uyarısı** | Windows'ta geliştirici modu kapalı olduğunda görülebilir. Kritik değildir; model cache daha fazla disk kullanabilir. İsterseniz Windows Developer Mode açılabilir veya `HF_HUB_DISABLE_SYMLINKS_WARNING=1` ayarlanabilir. |
+| **`QProcess: Destroyed while process ... is still running`** | Ana launcher kapatılırken alt uygulamalardan biri hâlâ çalışıyordur. Önce alt uygulama pencerelerini kapatın, sonra launcher'ı kapatın. |
 | **macOS `AVFFrameReceiver` Uyarısı** | `av` ve `opencv-python` kütüphanelerinin C++ çakışmasından kaynaklanan zararsız bir uyarıdır. |
 
 ---

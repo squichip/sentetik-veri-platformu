@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStyle,
     QTabWidget,
     QTextEdit,
     QVBoxLayout,
@@ -573,11 +574,34 @@ class RCGANQtApp(QWidget):
         root.addWidget(left_scroll, 2)
         root.addLayout(right, 3)
 
-        title = QLabel("RCGAN Robustness Pipeline")
-        title.setObjectName("title")
-        left.addWidget(title)
+        header = QHBoxLayout()
+        header.setSpacing(12)
 
-        file_group = QGroupBox("1) Dosyaları Seç")
+        logo = QLabel("RC")
+        logo.setObjectName("logoMark")
+        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        title_col = QVBoxLayout()
+        title_col.setSpacing(2)
+
+        title = QLabel("Görüntü Üretim Hattı")
+        title.setObjectName("title")
+        subtitle = QLabel("RCGAN + EDSR + YOLO/SegFormer")
+        subtitle.setObjectName("smallSubtitle")
+
+        title_col.addWidget(title)
+        title_col.addWidget(subtitle)
+
+        live_badge = QLabel("CANLI PIPELINE")
+        live_badge.setObjectName("liveBadge")
+        live_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        header.addWidget(logo)
+        header.addLayout(title_col, 1)
+        header.addWidget(live_badge)
+        left.addLayout(header)
+
+        file_group = QGroupBox("1  Dosyaları Seç")
         file_layout = QGridLayout(file_group)
 
         self.checkpoint_edit = QLineEdit("checkpoint_epoch_29.pt")
@@ -594,6 +618,8 @@ class RCGANQtApp(QWidget):
 
         self.select_images_btn = QPushButton("Çoklu Fotoğraf Seç")
         self.select_folder_btn = QPushButton("Klasörden Fotoğrafları Al")
+        self.select_images_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_FileDialogContentsView))
+        self.select_folder_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_DirOpenIcon))
 
         self.select_images_btn.clicked.connect(self.pick_multiple_images)
         self.select_folder_btn.clicked.connect(self.pick_image_folder)
@@ -628,7 +654,7 @@ class RCGANQtApp(QWidget):
 
         left.addWidget(file_group)
 
-        condition_group = QGroupBox("2) Üretim Koşulları")
+        condition_group = QGroupBox("2  Üretim Koşulları")
         condition_layout = QGridLayout(condition_group)
 
         self.fault_combo = QComboBox()
@@ -663,7 +689,7 @@ class RCGANQtApp(QWidget):
 
         left.addWidget(condition_group)
 
-        action_group = QGroupBox("3) Üret")
+        action_group = QGroupBox("3  Üretim")
         action_layout = QVBoxLayout(action_group)
 
         self.generate_one_btn = QPushButton("Seçilen Koşulla Zaman Serisi Üret")
@@ -672,6 +698,14 @@ class RCGANQtApp(QWidget):
         self.open_outputs_root_btn = QPushButton("Outputs Klasörünü Aç")
         self.open_results_root_btn = QPushButton("Results Klasörünü Aç")
         self.clear_btn = QPushButton("Listeyi Temizle")
+        self.generate_one_btn.setObjectName("primaryButton")
+        self.generate_selected_faults_btn.setObjectName("primaryButton")
+        self.generate_one_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_MediaPlay))
+        self.generate_selected_faults_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_BrowserReload))
+        self.open_output_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        self.open_outputs_root_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        self.open_results_root_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        self.clear_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_TrashIcon))
 
         self.generate_one_btn.clicked.connect(self.start_generation_single)
         self.generate_selected_faults_btn.clicked.connect(self.start_generation_selected_faults)
@@ -689,7 +723,7 @@ class RCGANQtApp(QWidget):
 
         left.addWidget(action_group)
 
-        pipeline_group = QGroupBox("4) Pipeline")
+        pipeline_group = QGroupBox("4  Analiz Pipeline")
         pipeline_layout = QVBoxLayout(pipeline_group)
 
         self.pipeline_one_btn = QPushButton("Pipeline: Tek Koşul")
@@ -698,6 +732,14 @@ class RCGANQtApp(QWidget):
         self.upscale_btn = QPushButton("Upscale Uygula")
         self.yolo_btn = QPushButton("YOLO Değerlendir")
         self.segmentation_btn = QPushButton("Segmentasyon Değerlendir")
+        self.pipeline_one_btn.setObjectName("successButton")
+        self.pipeline_selected_faults_btn.setObjectName("successButton")
+        self.pipeline_one_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_MediaPlay))
+        self.pipeline_selected_faults_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_ComputerIcon))
+        self.prepare_detector_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_DialogApplyButton))
+        self.upscale_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_ArrowUp))
+        self.yolo_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_FileDialogDetailedView))
+        self.segmentation_btn.setIcon(self._std_icon(QStyle.StandardPixmap.SP_FileDialogListView))
 
         self.pipeline_one_btn.clicked.connect(self.start_full_pipeline_single)
         self.pipeline_selected_faults_btn.clicked.connect(self.start_full_pipeline_selected_faults)
@@ -715,28 +757,50 @@ class RCGANQtApp(QWidget):
 
         left.addWidget(pipeline_group)
 
+        preview_header = QHBoxLayout()
+        preview_header.setSpacing(10)
+
         preview_title = QLabel("Önizleme ve Çıktılar")
         preview_title.setObjectName("subtitle")
-        right.addWidget(preview_title)
+        preview_badge = QLabel("GÖRSEL LAB")
+        preview_badge.setObjectName("liveBadge")
+        preview_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        preview_header.addWidget(preview_title)
+        preview_header.addStretch(1)
+        preview_header.addWidget(preview_badge)
+        right.addLayout(preview_header)
 
         preview_row = QHBoxLayout()
+        preview_row.setSpacing(12)
 
         self.curr_preview = ImagePreview("Seçilen clean frame önizleme")
         self.out_preview = ImagePreview("Üretilen görüntü önizleme")
 
-        preview_row.addWidget(self.curr_preview, 1)
-        preview_row.addWidget(self.out_preview, 1)
+        clean_card = QGroupBox("Clean Frame")
+        clean_layout = QVBoxLayout(clean_card)
+        clean_layout.addWidget(self.curr_preview)
+
+        generated_card = QGroupBox("Generated Frame")
+        generated_layout = QVBoxLayout(generated_card)
+        generated_layout.addWidget(self.out_preview)
+
+        preview_row.addWidget(clean_card, 1)
+        preview_row.addWidget(generated_card, 1)
 
         right.addLayout(preview_row, 3)
 
         self.output_list = QListWidget()
+        self.output_list.setObjectName("outputList")
         self.output_list.itemSelectionChanged.connect(self.preview_selected_output)
 
         self.log_box = QTextEdit()
+        self.log_box.setObjectName("logBox")
         self.log_box.setReadOnly(True)
         self.log_box.setPlaceholderText("İşlem kayıtları burada görünecek...")
 
         tabs = QTabWidget()
+        tabs.setObjectName("resultTabs")
         output_tab = QWidget()
         output_layout = QVBoxLayout(output_tab)
         output_layout.addWidget(self.output_list)
@@ -765,38 +829,50 @@ class RCGANQtApp(QWidget):
         layout.addWidget(edit, row, 1)
 
         btn = QPushButton("Seç")
+        btn.setIcon(self._std_icon(
+            QStyle.StandardPixmap.SP_DirOpenIcon
+            if directory
+            else QStyle.StandardPixmap.SP_FileIcon
+        ))
         btn.clicked.connect(picker)
 
         layout.addWidget(btn, row, 2)
+
+    def _std_icon(self, icon):
+        return self.style().standardIcon(icon)
 
     def _apply_styles(self):
         self.setStyleSheet("""
             QWidget {
                 font-size: 14px;
-                color: #20242a;
-                background: #f4f6f8;
+                color: #e8ecf4;
+                background: #06080f;
             }
 
             QWidget#controlPanel {
-                background: #f4f6f8;
+                background: #06080f;
             }
 
             QScrollArea#controlScroll {
                 border: none;
-                background: #f4f6f8;
+                background: #06080f;
             }
 
             QScrollBar:vertical {
-                background: #e7ebef;
+                background: #0c1017;
                 width: 10px;
                 margin: 0;
                 border-radius: 5px;
             }
 
             QScrollBar::handle:vertical {
-                background: #aab5c1;
+                background: #30384a;
                 min-height: 32px;
                 border-radius: 5px;
+            }
+
+            QScrollBar::handle:vertical:hover {
+                background: #6366f1;
             }
 
             QScrollBar::add-line:vertical,
@@ -805,103 +881,200 @@ class RCGANQtApp(QWidget):
             }
 
             QLabel#title {
-                font-size: 25px;
+                font-size: 26px;
+                font-weight: 800;
+                margin: 0;
+                color: #e8ecf4;
+            }
+
+            QLabel#smallSubtitle {
+                font-size: 12px;
                 font-weight: 700;
-                margin: 2px 0 8px 0;
-                color: #17202a;
+                letter-spacing: 1px;
+                color: #22d3ee;
             }
 
             QLabel#subtitle {
                 font-size: 19px;
-                font-weight: 700;
-                color: #17202a;
+                font-weight: 800;
+                color: #e8ecf4;
+            }
+
+            QLabel#logoMark {
+                min-width: 44px;
+                max-width: 44px;
+                min-height: 44px;
+                max-height: 44px;
+                border-radius: 12px;
+                background: #6366f1;
+                color: #ffffff;
+                font-size: 15px;
+                font-weight: 900;
+                border: 1px solid rgba(139,92,246,0.55);
+            }
+
+            QLabel#liveBadge {
+                padding: 6px 11px;
+                border-radius: 14px;
+                background: rgba(16,185,129,0.08);
+                border: 1px solid rgba(16,185,129,0.22);
+                color: #10b981;
+                font-size: 10px;
+                font-weight: 900;
+                letter-spacing: 1px;
             }
 
             QLabel#hint {
-                color: #59636f;
-                padding: 10px;
-                background: #eef2f5;
-                border: 1px solid #d9e0e7;
-                border-radius: 8px;
+                color: #a0aec0;
+                padding: 12px;
+                background: #0c1017;
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 10px;
             }
 
             QLabel#preview {
-                border: 1px solid #c9d2dc;
-                border-radius: 8px;
-                background: #ffffff;
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 14px;
+                background: #080c14;
+                color: #5a6578;
+                font-weight: 700;
             }
 
             QPushButton {
-                padding: 9px 12px;
-                border-radius: 7px;
-                border: 1px solid #b8c3cf;
-                background: #ffffff;
-                color: #17202a;
+                padding: 10px 13px;
+                border-radius: 10px;
+                border: 1px solid rgba(255,255,255,0.08);
+                background: #181e2a;
+                color: #e8ecf4;
+                font-weight: 650;
+                icon-size: 16px;
             }
 
             QPushButton:hover {
-                background: #edf5ff;
-                border-color: #7aa7d9;
+                background: rgba(99,102,241,0.12);
+                border-color: rgba(99,102,241,0.38);
+                color: #ffffff;
             }
 
             QPushButton:pressed {
-                background: #dcecff;
+                background: rgba(99,102,241,0.22);
             }
 
             QPushButton:disabled {
-                color: #9aa3ad;
-                background: #edf0f3;
+                color: #5a6578;
+                background: #101520;
+                border-color: rgba(255,255,255,0.04);
+            }
+
+            QPushButton#primaryButton {
+                background: #6366f1;
+                color: #ffffff;
+                border-color: #6366f1;
+                font-weight: 800;
+            }
+
+            QPushButton#primaryButton:hover {
+                background: #8b5cf6;
+                border-color: #8b5cf6;
+            }
+
+            QPushButton#successButton {
+                background: #10b981;
+                color: #06130f;
+                border-color: #10b981;
+                font-weight: 800;
+            }
+
+            QPushButton#successButton:hover {
+                background: #22d3ee;
+                border-color: #22d3ee;
+                color: #061018;
             }
 
             QLineEdit,
             QComboBox {
-                padding: 7px;
-                border-radius: 6px;
-                border: 1px solid #c8d0da;
-                background: #ffffff;
+                padding: 8px;
+                border-radius: 10px;
+                border: 1px solid rgba(255,255,255,0.08);
+                background: #0c1017;
+                color: #e8ecf4;
+                selection-background-color: #6366f1;
+            }
+
+            QLineEdit:focus,
+            QComboBox:focus {
+                border-color: rgba(99,102,241,0.55);
+                background: #111620;
+            }
+
+            QComboBox::drop-down {
+                border: none;
+                width: 28px;
+            }
+
+            QComboBox QAbstractItemView {
+                background: #111620;
+                color: #e8ecf4;
+                border: 1px solid rgba(99,102,241,0.25);
+                selection-background-color: #6366f1;
             }
 
             QTextEdit,
             QListWidget {
-                border: 1px solid #c8d0da;
-                border-radius: 8px;
-                background: #ffffff;
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 12px;
+                background: #0c1017;
+                color: #a0aec0;
+                selection-background-color: rgba(99,102,241,0.45);
+            }
+
+            QListWidget::item {
+                padding: 6px;
+                border-radius: 7px;
+            }
+
+            QListWidget::item:selected {
+                background: rgba(99,102,241,0.20);
+                color: #ffffff;
             }
 
             QTabWidget::pane {
-                border: 1px solid #c8d0da;
-                border-radius: 8px;
-                background: #ffffff;
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 12px;
+                background: #111620;
             }
 
             QTabBar::tab {
-                padding: 8px 14px;
-                border: 1px solid #c8d0da;
+                padding: 9px 16px;
+                border: 1px solid rgba(255,255,255,0.06);
                 border-bottom: none;
-                background: #e8edf2;
-                border-top-left-radius: 7px;
-                border-top-right-radius: 7px;
+                background: #0c1017;
+                color: #a0aec0;
+                border-top-left-radius: 10px;
+                border-top-right-radius: 10px;
             }
 
             QTabBar::tab:selected {
-                background: #ffffff;
-                font-weight: 700;
+                background: #111620;
+                color: #6366f1;
+                font-weight: 800;
             }
 
             QGroupBox {
-                font-weight: 700;
+                font-weight: 800;
                 margin-top: 12px;
-                padding: 12px 10px 10px 10px;
-                border: 1px solid #d3dbe4;
-                border-radius: 8px;
-                background: #fbfcfd;
+                padding: 16px 12px 12px 12px;
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 14px;
+                background: #111620;
             }
 
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-                color: #2b3a48;
+                left: 12px;
+                padding: 0 6px;
+                color: #a0aec0;
+                background: #06080f;
             }
         """)
 

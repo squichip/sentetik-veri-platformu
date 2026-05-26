@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QProcess, Qt
+from PySide6.QtCore import QProcess, QProcessEnvironment, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QGroupBox,
@@ -23,7 +23,18 @@ IMAGE_APP_SCRIPT = IMAGE_APP_DIR / "qt_gui_app_updated.py"
 
 DATA_APP_DIR = PROJECT_ROOT / "akilli_veri_arttirimi"
 DATA_APP_SCRIPT = DATA_APP_DIR / "main.py"
-DATA_APP_VENV_PYTHON = DATA_APP_DIR / "otonom_env" / "bin" / "python"
+
+
+def venv_python(venv_dir):
+    if sys.platform.startswith("win"):
+        return venv_dir / "Scripts" / "python.exe"
+    return venv_dir / "bin" / "python"
+
+
+DATA_APP_VENV_CANDIDATES = [
+    venv_python(DATA_APP_DIR / "otonom_env"),
+    venv_python(DATA_APP_DIR / "otonom_env311"),
+]
 
 
 class MainLauncher(QWidget):
@@ -128,32 +139,32 @@ class MainLauncher(QWidget):
         self.setStyleSheet("""
             QWidget {
                 font-size: 14px;
-                color: #20242a;
-                background: #f4f6f8;
+                color: #e8ecf4;
+                background: #06080f;
             }
 
             QLabel#title {
                 font-size: 30px;
                 font-weight: 800;
-                color: #17202a;
+                color: #e8ecf4;
             }
 
             QLabel#subtitle {
                 font-size: 16px;
-                color: #53606d;
+                color: #a0aec0;
             }
 
             QLabel#cardBody {
-                color: #4b5563;
+                color: #a0aec0;
                 line-height: 1.35;
             }
 
             QLabel#hint {
-                color: #59636f;
+                color: #a0aec0;
                 padding: 10px;
-                background: #eef2f5;
-                border: 1px solid #d9e0e7;
-                border-radius: 8px;
+                background: #0c1017;
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 10px;
             }
 
             QGroupBox {
@@ -161,46 +172,52 @@ class MainLauncher(QWidget):
                 font-weight: 800;
                 margin-top: 12px;
                 padding: 18px 14px 14px 14px;
-                border: 1px solid #d3dbe4;
-                border-radius: 10px;
-                background: #fbfcfd;
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 14px;
+                background: #111620;
             }
 
             QGroupBox::title {
                 subcontrol-origin: margin;
                 left: 12px;
                 padding: 0 6px;
-                color: #2b3a48;
+                color: #a0aec0;
+                background: #06080f;
             }
 
             QPushButton {
                 padding: 11px 14px;
-                border-radius: 8px;
-                border: 1px solid #b8c3cf;
-                background: #ffffff;
-                color: #17202a;
+                border-radius: 10px;
+                border: 1px solid rgba(255,255,255,0.08);
+                background: #181e2a;
+                color: #e8ecf4;
+                font-weight: 650;
             }
 
             QPushButton:hover {
-                background: #edf5ff;
-                border-color: #7aa7d9;
+                background: rgba(99,102,241,0.12);
+                border-color: rgba(99,102,241,0.38);
+                color: #ffffff;
             }
 
             QPushButton#primaryButton {
-                background: #1f6feb;
+                background: #6366f1;
                 color: #ffffff;
-                border-color: #1f6feb;
-                font-weight: 700;
+                border-color: #6366f1;
+                font-weight: 800;
             }
 
             QPushButton#primaryButton:hover {
-                background: #155fc9;
+                background: #8b5cf6;
+                border-color: #8b5cf6;
             }
 
             QTextEdit {
-                border: 1px solid #c8d0da;
-                border-radius: 8px;
-                background: #ffffff;
+                border: 1px solid rgba(255,255,255,0.06);
+                border-radius: 12px;
+                background: #0c1017;
+                color: #a0aec0;
+                selection-background-color: rgba(99,102,241,0.45);
             }
         """)
 
@@ -213,10 +230,11 @@ class MainLauncher(QWidget):
         )
 
     def open_data_app(self):
-        python = str(DATA_APP_VENV_PYTHON) if DATA_APP_VENV_PYTHON.exists() else sys.executable
+        data_python = next((path for path in DATA_APP_VENV_CANDIDATES if path.exists()), None)
+        python = str(data_python) if data_python else sys.executable
 
-        if not DATA_APP_VENV_PYTHON.exists():
-            self.log("Akıllı veri artırımı için otonom_env bulunamadı.")
+        if data_python is None:
+            self.log("Akıllı veri artırımı için otonom_env311/otonom_env bulunamadı.")
 
         missing = self.missing_modules(
             python=python,
@@ -229,10 +247,10 @@ class MainLauncher(QWidget):
                 f"Kullanılan Python:\n{python}\n\n"
                 f"Eksik modüller: {', '.join(missing)}\n\n"
                 "Kurmak için terminalde:\n"
-                "cd /Users/ozcan/Desktop/projects/akilli_veri_arttirimi\n"
-                "python3 -m venv otonom_env\n"
-                "source otonom_env/bin/activate\n"
-                "pip install -r requirements.txt"
+                f"cd {DATA_APP_DIR}\n"
+                "py -3.11 -m venv otonom_env311\n"
+                ".\\otonom_env311\\Scripts\\Activate.ps1\n"
+                "python -m pip install -r requirements.txt"
             )
             self.log(message)
             QMessageBox.warning(self, "Ortam hazır değil", message)
@@ -271,6 +289,11 @@ class MainLauncher(QWidget):
         process.setArguments([str(script)])
         process.setWorkingDirectory(str(cwd))
         process.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        env = QProcessEnvironment.systemEnvironment()
+        env.insert("PYTHONIOENCODING", "utf-8")
+        env.insert("PYTHONUTF8", "1")
+        env.insert("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+        process.setProcessEnvironment(env)
 
         process.readyReadStandardOutput.connect(
             lambda proc=process, name=label: self.read_process_output(name, proc)
